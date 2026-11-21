@@ -87,9 +87,20 @@ public:
 public:
 	//{{AFX_VIRTUAL(CToolBarEx)
 	CSize CalcDynamicLayout(int nLength, DWORD dwMode) override;
+	void DrawBorders(CDC *pDC, CRect &rect) override;
 	virtual void SetHorizontal();
 	virtual void SetVertical();
 	//}}AFX_VIRTUAL
+};
+
+
+// Status bar that can also be drawn in dark mode
+class CMainStatusBar : public CStatusBar
+{
+protected:
+	afx_msg void OnPaint();
+	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
+	DECLARE_MESSAGE_MAP()
 };
 
 
@@ -149,6 +160,7 @@ protected:
 	//{{AFX_MSG(CMainToolBar)
 	afx_msg LRESULT OnDPIChangedAfterParent(WPARAM, LPARAM);
 	afx_msg LRESULT OnSettingChange(WPARAM, LPARAM);
+	afx_msg void OnSysColorChange();
 	afx_msg LRESULT OnRefreshToolbar(WPARAM, LPARAM);
 	afx_msg void OnVScroll(UINT, UINT, CScrollBar *);
 	afx_msg void OnTbnDropDownToolBar(NMHDR* pNMHDR, LRESULT* pResult);

@@ -11,6 +11,7 @@
 #include "stdafx.h"
 #include "ColorConfigDlg.h"
 #include "ColorSchemes.h"
+#include "DarkMode.h"
 #include "FileDialog.h"
 #include "HighDPISupport.h"
 #include "Mainfrm.h"
@@ -80,6 +81,7 @@ BEGIN_MESSAGE_MAP(COptionsColors, CPropertyPage)
 	ON_CBN_SELCHANGE(IDC_COMBO2,      &COptionsColors::OnSettingsChanged)
 	ON_CBN_SELCHANGE(IDC_COMBO3,      &COptionsColors::OnPresetChange)
 	ON_CBN_SELCHANGE(IDC_COMBO4,      &COptionsColors::OnSettingsChanged)
+	ON_CBN_SELCHANGE(IDC_COMBO_THEME, &COptionsColors::OnSettingsChanged)
 	ON_EN_CHANGE(IDC_PRIMARYHILITE,   &COptionsColors::OnSettingsChanged)
 	ON_EN_CHANGE(IDC_SECONDARYHILITE, &COptionsColors::OnSettingsChanged)
 	ON_COMMAND(IDC_BUTTON1,           &COptionsColors::OnSelectColor1)
@@ -111,6 +113,7 @@ void COptionsColors::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO2,          m_ComboFont);
 	DDX_Control(pDX, IDC_COMBO3,          m_ComboPreset);
 	DDX_Control(pDX, IDC_COMBO4,          m_ComboDPIAwareness);
+	DDX_Control(pDX, IDC_COMBO_THEME,     m_ComboTheme);
 	DDX_Control(pDX, IDC_BUTTON1,         m_BtnColor[0]);
 	DDX_Control(pDX, IDC_BUTTON2,         m_BtnColor[1]);
 	DDX_Control(pDX, IDC_BUTTON3,         m_BtnColor[2]);
@@ -153,7 +156,28 @@ BOOL COptionsColors::OnInitDialog()
 	CPropertyPage::OnInitDialog();
 	
 	m_pPreviewDib = LoadDib(MAKEINTRESOURCE(IDB_COLORSETUP));
-	
+
+	static constexpr std::pair<const TCHAR *, DarkModeSetting> Themes[] =
+	{
+		{_T("Light"),                    DarkModeSetting::Light },
+		{_T("Dark"),                     DarkModeSetting::Dark  },
+		{_T("Use Windows app setting"),  DarkModeSetting::System},
+	};
+	const DarkModeSetting currentTheme = TrackerSettings::Instance().darkMode;
+	for(const auto &[name, theme] : Themes)
+	{
+		int item = m_ComboTheme.AddString(name);
+		m_ComboTheme.SetItemData(item, static_cast<DWORD_PTR>(theme));
+		if(currentTheme == theme)
+			m_ComboTheme.SetCurSel(item);
+	}
+	if(!DarkMode::IsSupported())
+	{
+		// Dark mode requires Windows 10 1809 or newer
+		m_ComboTheme.SetCurSel(0);
+		m_ComboTheme.EnableWindow(FALSE);
+	}
+
 	m_ComboDPIAwareness.SetRedraw(FALSE);
 	static constexpr std::pair<const TCHAR *, DPIAwarenessMode> DPIModes[] =
 	{
@@ -321,6 +345,17 @@ void COptionsColors::OnOK()
 	CMainFrame *pMainFrm = CMainFrame::GetMainFrame();
 	if (pMainFrm) pMainFrm->PostMessage(WM_MOD_INVALIDATEPATTERNS, HINT_MPTOPTIONS);
 	CSoundFile::SetDefaultNoteNames();
+
+	if(m_ComboTheme.IsWindowEnabled() && m_ComboTheme.GetCurSel() >= 0)
+	{
+		const auto newTheme = static_cast<DarkModeSetting>(m_ComboTheme.GetItemData(m_ComboTheme.GetCurSel()));
+		if(newTheme != TrackerSettings::Instance().darkMode)
+		{
+			TrackerSettings::Instance().darkMode = newTheme;
+			DarkMode::SetSetting(newTheme);
+		}
+	}
+
 	CPropertyPage::OnOK();
 }
 
@@ -588,7 +623,7 @@ void COptionsColors::OnPresetChange()
 	auto curSel = m_ComboPreset.GetCurSel();
 	if(curSel == 0)
 		return;
-	TrackerSettings::GetDefaultColourScheme(CustomColors);
+	TrackerSettings::GetThemeDefaultColourScheme(CustomColors);
 	auto scheme = static_cast<const ColorScheme *>(m_ComboPreset.GetItemDataPtr(curSel));
 	if(scheme != nullptr)
 	{
@@ -610,7 +645,7 @@ void COptionsColors::OnLoadColorScheme()
 	if(!dlg.Show(this)) return;
 
 	// Ensure that all colours are reset (for outdated colour schemes)
-	TrackerSettings::GetDefaultColourScheme(CustomColors);
+	TrackerSettings::GetThemeDefaultColourScheme(CustomColors);
 	{
 		IniFileSettingsContainer file(dlg.GetFirstFile());
 		for(uint32 i = 0; i < MAX_MODCOLORS; i++)

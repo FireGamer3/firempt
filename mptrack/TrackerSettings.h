@@ -300,6 +300,13 @@ enum class DPIAwarenessMode
 	PerMonitorDPIAware,
 };
 
+enum class DarkModeSetting : int32
+{
+	Light = 0,
+	Dark,
+	System,  // Follow the Windows app mode setting
+};
+
 class SampleUndoBufferSize
 {
 protected:
@@ -361,6 +368,9 @@ template<> inline DefaultChannelColors FromSettingValue(const SettingValue& val)
 
 template<> inline SettingValue ToSettingValue(const DPIAwarenessMode &val) { return SettingValue(int32(val)); }
 template<> inline DPIAwarenessMode FromSettingValue(const SettingValue &val) { return DPIAwarenessMode(val.as<int32>()); }
+
+template<> inline SettingValue ToSettingValue(const DarkModeSetting &val) { return SettingValue(int32(val)); }
+template<> inline DarkModeSetting FromSettingValue(const SettingValue &val) { return DarkModeSetting(val.as<int32>()); }
 
 template<> inline SettingValue ToSettingValue(const FlagSet<PatternSetup>& val) { return SettingValue(int32(val.GetRaw())); }
 template<> inline FlagSet<PatternSetup> FromSettingValue(const SettingValue& val) { return PatternSetup(val.as<int32>()); }
@@ -735,6 +745,7 @@ public:
 	Setting<bool> m_ShowSplashScreen;
 	Setting<bool> gbMdiMaximize;
 	Setting<DPIAwarenessMode> dpiAwareness;
+	Setting<DarkModeSetting> darkMode;
 	Setting<LONG> glTreeSplitRatio;
 	Setting<LONG> glTreeWindowWidth;
 	Setting<LONG> glGeneralWindowHeight;
@@ -1041,6 +1052,11 @@ public:
 	void SaveSettings();
 
 	static void GetDefaultColourScheme(std::array<COLORREF, MAX_MODCOLORS> &colours);
+	static void GetDefaultDarkColourScheme(std::array<COLORREF, MAX_MODCOLORS> &colours);
+	// Default colour scheme matching the current UI theme
+	static void GetThemeDefaultColourScheme(std::array<COLORREF, MAX_MODCOLORS> &colours);
+	// If the user did not customize the colour scheme, switch between the light and dark default schemes to match the UI theme.
+	void AdaptDefaultColourSchemeToTheme();
 
 	std::vector<uint32> GetSampleRates() const;
 

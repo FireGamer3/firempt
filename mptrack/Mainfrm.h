@@ -199,7 +199,7 @@ public:
 
 protected:
 	CModTreeBar m_wndTree;
-	CStatusBar m_wndStatusBar;
+	CMainStatusBar m_wndStatusBar;
 	CMainToolBar m_wndToolBar;
 	CSoundFile *m_pSndFile = nullptr; // != NULL only when currently playing or rendering
 	HWND m_hWndMidi = nullptr;
@@ -409,6 +409,7 @@ protected:
 	void AddToolBarMenuEntries(CMenu &menu) const;
 
 	void RecreateImageLists();
+	void CreateSysColorPens();
 	void SetupStatusBarSizes();
 
 public:
@@ -480,6 +481,8 @@ protected:
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 	afx_msg BOOL OnQueryEndSession();
 	afx_msg void OnActivateApp(BOOL active, DWORD threadID);
+	afx_msg void OnSettingChange(UINT flags, LPCTSTR section);
+	afx_msg void OnSysColorChange();
 	afx_msg void OnActivate(UINT nState, CWnd *pWndOther, BOOL bMinimized);
 
 	afx_msg void OnToggleMainBarShowOctave();

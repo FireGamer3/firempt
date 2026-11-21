@@ -928,6 +928,7 @@
     <ClInclude Include="..\..\mptrack\Ctrl_ins.h" />
     <ClInclude Include="..\..\mptrack\Ctrl_pat.h" />
     <ClInclude Include="..\..\mptrack\Ctrl_smp.h" />
+    <ClInclude Include="..\..\mptrack\DarkMode.h" />
     <ClInclude Include="..\..\mptrack\DefaultKeyBindings.h" />
     <ClInclude Include="..\..\mptrack\DefaultVstEditor.h" />
     <ClInclude Include="..\..\mptrack\DialogBase.h" />
@@ -1393,6 +1394,7 @@
     <ClCompile Include="..\..\mptrack\Ctrl_pat.cpp" />
     <ClCompile Include="..\..\mptrack\Ctrl_seq.cpp" />
     <ClCompile Include="..\..\mptrack\Ctrl_smp.cpp" />
+    <ClCompile Include="..\..\mptrack\DarkMode.cpp" />
     <ClCompile Include="..\..\mptrack\DefaultVstEditor.cpp" />
     <ClCompile Include="..\..\mptrack\DialogBase.cpp" />
     <ClCompile Include="..\..\mptrack\Draw_pat.cpp" />

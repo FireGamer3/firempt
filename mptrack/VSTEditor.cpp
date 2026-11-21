@@ -10,6 +10,7 @@
 
 #include "stdafx.h"
 #include "VSTEditor.h"
+#include "DarkMode.h"
 #include "resource.h"
 #include "Vstplug.h"
 
@@ -76,6 +77,8 @@ bool COwnerVstEditor::OpenEditor(CWnd *parent)
 
 	// Some plugins (e.g. ProteusVX) need to be planted into another control or else they will break our window proc, making the window unusable.
 	m_plugWindow.Create(nullptr, WS_CHILD | WS_VISIBLE, CRect(0, 0, 100, 100), this);
+	// Plugin GUIs draw themselves
+	DarkMode::ExcludeWindow(m_plugWindow);
 
 	// Set editor window size
 	Vst::ERect rect{};

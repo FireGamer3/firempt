@@ -16,6 +16,7 @@
 #include "Childfrm.h"
 #include "CloseMainDialog.h"
 #include "ColorConfigDlg.h"
+#include "DarkMode.h"
 #include "dlg_misc.h"
 #include "Dlsbank.h"
 #include "FileDialog.h"
@@ -98,6 +99,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_WM_SHOWWINDOW()
 	ON_WM_ACTIVATEAPP()
 	ON_WM_ACTIVATE()
+	ON_WM_SETTINGCHANGE()
+	ON_WM_SYSCOLORCHANGE()
 
 	ON_MESSAGE(WM_DPICHANGED, &CMainFrame::OnDPIChanged)
 
@@ -294,10 +297,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_hIcon = theApp.LoadIcon(IDR_MAINFRAME);
 
 	RecreateImageLists();
-
-	penDarkGray = ::CreatePen(PS_SOLID, 0, GetSysColor(COLOR_BTNSHADOW));
-	penGray99 = ::CreatePen(PS_SOLID, 0, RGB(0x99, 0x99, 0x99));
-	penHalfDarkGray = ::CreatePen(PS_DOT, 0, GetSysColor(COLOR_BTNSHADOW));
+	HighDPISupport::CreateGUIFont(m_hGUIFont, m_hWnd);
+	CreateSysColorPens();
 
 	// Cursors
 	curDragging = theApp.LoadCursor(IDC_DRAGGING);
@@ -351,9 +352,43 @@ LRESULT CMainFrame::OnDPIChanged(WPARAM, LPARAM suggestedRect)
 	auto result = Default();
 
 	RecreateImageLists();
+	HighDPISupport::CreateGUIFont(m_hGUIFont, m_hWnd);
 	SetupStatusBarSizes();
 	m_wndTree.RecalcLayout();
 	return result;
+}
+
+
+void CMainFrame::CreateSysColorPens()
+{
+	if(penDarkGray)
+		::DeleteObject(penDarkGray);
+	if(penGray99)
+		::DeleteObject(penGray99);
+	if(penHalfDarkGray)
+		::DeleteObject(penHalfDarkGray);
+	penDarkGray = ::CreatePen(PS_SOLID, 0, GetSysColor(COLOR_BTNSHADOW));
+	penGray99 = ::CreatePen(PS_SOLID, 0, RGB(0x99, 0x99, 0x99));
+	penHalfDarkGray = ::CreatePen(PS_DOT, 0, GetSysColor(COLOR_BTNSHADOW));
+}
+
+
+void CMainFrame::OnSettingChange(UINT flags, LPCTSTR section)
+{
+	CMDIFrameWnd::OnSettingChange(flags, section);
+	DarkMode::OnSettingChange(flags, section);
+}
+
+
+// Sent by Windows when the system colours change, and by DarkMode when switching between light and dark mode.
+void CMainFrame::OnSysColorChange()
+{
+	CMDIFrameWnd::OnSysColorChange();  // Also updates MFC's cached colours and notifies all child windows
+	TrackerSettings::Instance().AdaptDefaultColourSchemeToTheme();
+	RecreateImageLists();
+	CreateSysColorPens();
+	UpdateColors();
+	PostMessage(WM_MOD_INVALIDATEPATTERNS, HINT_MPTOPTIONS);
 }
 
 
@@ -372,8 +407,6 @@ void CMainFrame::RecreateImageLists()
 	m_EnvelopeIcons.Create(IDB_ENVTOOLBAR, 20, 18, ENVIMG_NUMIMAGES, 1, dc, scaling, false, envelopeIconsInvert);
 	m_SampleIcons.Create(IDB_SMPTOOLBAR, 20, 18, SAMPLEIMG_NUMIMAGES, 1, dc, scaling, false);
 	ReleaseDC(dc);
-
-	HighDPISupport::CreateGUIFont(m_hGUIFont, m_hWnd);
 }
 
 

@@ -630,6 +630,9 @@
     <ClInclude Include="..\..\mptrack\Ctrl_smp.h">
       <Filter>mptrack</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\mptrack\DarkMode.h">
+      <Filter>mptrack</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\mptrack\DefaultKeyBindings.h">
       <Filter>mptrack</Filter>
     </ClInclude>
@@ -2019,6 +2022,9 @@
       <Filter>mptrack</Filter>
     </ClCompile>
     <ClCompile Include="..\..\mptrack\Ctrl_smp.cpp">
+      <Filter>mptrack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mptrack\DarkMode.cpp">
       <Filter>mptrack</Filter>
     </ClCompile>
     <ClCompile Include="..\..\mptrack\DefaultVstEditor.cpp">

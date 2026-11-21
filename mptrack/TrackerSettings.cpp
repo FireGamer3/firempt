@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "TrackerSettings.h"
+#include "DarkMode.h"
 #include "ExceptionHandler.h"
 #include "HighDPISupport.h"
 #include "Mainfrm.h"
@@ -173,6 +174,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, m_ShowSplashScreen(conf, UL_("Display"), UL_("ShowSplashScreen"), true)
 	, gbMdiMaximize(conf, UL_("Display"), UL_("MDIMaximize"), true)
 	, dpiAwareness(conf, UL_("Display"), UL_("DPIAwareness"), DPIAwarenessMode::PerMonitorDPIAware)
+	, darkMode(conf, UL_("Display"), UL_("DarkMode"), DarkModeSetting::System)
 	, glTreeSplitRatio(conf, UL_("Display"), UL_("MDITreeRatio"), 128)
 	, glTreeWindowWidth(conf, UL_("Display"), UL_("MDITreeWidth"), 160)
 	, glGeneralWindowHeight(conf, UL_("Display"), UL_("MDIGeneralHeight"), 222)
@@ -1300,12 +1302,12 @@ void TrackerSettings::GetDefaultColourScheme(std::array<COLORREF, MAX_MODCOLORS>
 	colours[MODCOLOR_VUMETER_LO_VST] = RGB(0x18, 0x96, 0xE1);
 	colours[MODCOLOR_VUMETER_MED_VST] = RGB(0xFF, 0xC8, 0x00);
 	colours[MODCOLOR_VUMETER_HI_VST] = RGB(0xE1, 0x00, 0x00);
-	// Channel separators
-	colours[MODCOLOR_SEPSHADOW] = GetSysColor(COLOR_BTNSHADOW);
-	colours[MODCOLOR_SEPFACE] = GetSysColor(COLOR_BTNFACE);
-	colours[MODCOLOR_SEPHILITE] = GetSysColor(COLOR_BTNHIGHLIGHT);
+	// Channel separators (these are stored in the settings, so they must not depend on dark mode)
+	colours[MODCOLOR_SEPSHADOW] = DarkMode::GetRealSysColor(COLOR_BTNSHADOW);
+	colours[MODCOLOR_SEPFACE] = DarkMode::GetRealSysColor(COLOR_BTNFACE);
+	colours[MODCOLOR_SEPHILITE] = DarkMode::GetRealSysColor(COLOR_BTNHIGHLIGHT);
 	// Pattern blend colour
-	colours[MODCOLOR_BLENDCOLOR] = GetSysColor(COLOR_BTNFACE);
+	colours[MODCOLOR_BLENDCOLOR] = DarkMode::GetRealSysColor(COLOR_BTNFACE);
 	// Dodgy commands
 	colours[MODCOLOR_DODGY_COMMANDS] = RGB(0xC0, 0x00, 0x00);
 	// Sample / instrument editor
@@ -1317,6 +1319,61 @@ void TrackerSettings::GetDefaultColourScheme(std::array<COLORREF, MAX_MODCOLORS>
 	colours[MODCOLOR_SAMPLE_LOOPMARKER] = RGB(0x30, 0xCC, 0x30);
 	colours[MODCOLOR_SAMPLE_SUSTAINMARKER] = RGB(50, 0xCC, 0xCC);
 	colours[MODCOLOR_SAMPLE_CUEPOINT] = RGB(0xFF, 0xCC, 0x30);
+}
+
+
+void TrackerSettings::GetDefaultDarkColourScheme(std::array<COLORREF, MAX_MODCOLORS> &colours)
+{
+	// Same hues as the default scheme, adjusted for a dark background
+	GetDefaultColourScheme(colours);
+	colours[MODCOLOR_BACKNORMAL] = RGB(0x1E, 0x1E, 0x1E);
+	colours[MODCOLOR_TEXTNORMAL] = RGB(0xC8, 0xC8, 0xC8);
+	colours[MODCOLOR_BACKCURROW] = RGB(0x3C, 0x3C, 0x3C);
+	colours[MODCOLOR_BACKRECORDROW] = RGB(0x3C, 0x3C, 0x3C);
+	colours[MODCOLOR_TEXTCURROW] = RGB(0xFF, 0xFF, 0xFF);
+	colours[MODCOLOR_BACKSELECTED] = RGB(0x26, 0x4F, 0x78);
+	colours[MODCOLOR_TEXTSELECTED] = RGB(0xFF, 0xFF, 0xFF);
+	colours[MODCOLOR_BACKPLAYCURSOR] = RGB(0x4A, 0x46, 0x1E);
+	colours[MODCOLOR_TEXTPLAYCURSOR] = RGB(0xFF, 0xFF, 0xFF);
+	colours[MODCOLOR_BACKHILIGHT] = RGB(0x28, 0x30, 0x28);
+	// Effect Colors
+	colours[MODCOLOR_NOTE] = RGB(0x80, 0xB0, 0xFF);
+	colours[MODCOLOR_INSTRUMENT] = RGB(0x40, 0xD0, 0xD0);
+	colours[MODCOLOR_VOLUME] = RGB(0x60, 0xD0, 0x60);
+	colours[MODCOLOR_PANNING] = RGB(0x40, 0xD0, 0xD0);
+	colours[MODCOLOR_PITCH] = RGB(0xD0, 0xD0, 0x50);
+	colours[MODCOLOR_GLOBALS] = RGB(0xFF, 0x70, 0x70);
+	// Channel separators
+	colours[MODCOLOR_SEPSHADOW] = RGB(0x14, 0x14, 0x14);
+	colours[MODCOLOR_SEPFACE] = RGB(0x2D, 0x2D, 0x2D);
+	colours[MODCOLOR_SEPHILITE] = RGB(0x46, 0x46, 0x46);
+	// Pattern blend colour
+	colours[MODCOLOR_BLENDCOLOR] = RGB(0x20, 0x20, 0x20);
+	// Dodgy commands
+	colours[MODCOLOR_DODGY_COMMANDS] = RGB(0xFF, 0x50, 0x50);
+	// Sample / instrument editor
+	colours[MODCOLOR_ENVELOPES] = RGB(0x40, 0x80, 0xFF);
+}
+
+
+void TrackerSettings::GetThemeDefaultColourScheme(std::array<COLORREF, MAX_MODCOLORS> &colours)
+{
+	if(DarkMode::IsEnabled())
+		GetDefaultDarkColourScheme(colours);
+	else
+		GetDefaultColourScheme(colours);
+}
+
+
+void TrackerSettings::AdaptDefaultColourSchemeToTheme()
+{
+	std::array<COLORREF, MAX_MODCOLORS> lightColours, darkColours;
+	GetDefaultColourScheme(lightColours);
+	GetDefaultDarkColourScheme(darkColours);
+	if(DarkMode::IsEnabled() && rgbCustomColors == lightColours)
+		rgbCustomColors = darkColours;
+	else if(!DarkMode::IsEnabled() && rgbCustomColors == darkColours)
+		rgbCustomColors = lightColours;
 }
 
 

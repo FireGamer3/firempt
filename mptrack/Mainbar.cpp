@@ -10,6 +10,7 @@
 
 #include "stdafx.h"
 #include "Mainbar.h"
+#include "DarkMode.h"
 #include "HighDPISupport.h"
 #include "ImageLists.h"
 #include "InputHandler.h"
@@ -111,6 +112,22 @@ CSize CToolBarEx::CalcDynamicLayout(int nLength, DWORD dwMode)
 	}
 
 	return sizeResult;
+}
+
+
+void CToolBarEx::DrawBorders(CDC *pDC, CRect &rect)
+{
+	if(!DarkMode::IsEnabled())
+	{
+		CToolBar::DrawBorders(pDC, rect);
+		return;
+	}
+	// MFC draws the background of flat toolbars using the "Rebar" visual style, which has no dark variant.
+	pDC->FillSolidRect(rect, GetSysColor(COLOR_BTNFACE));
+	const DWORD style = m_dwStyle;
+	m_dwStyle &= ~TBSTYLE_FLAT;
+	CToolBar::DrawBorders(pDC, rect);
+	m_dwStyle = style;
 }
 
 
@@ -275,6 +292,40 @@ static_assert(std::size(MainButtons) == NUM_TOOLBAR_INDEX);
 
 enum { MAX_MIDI_DEVICES = 256 };
 
+
+/////////////////////////////////////////////////////////////////////
+// CMainStatusBar
+
+BEGIN_MESSAGE_MAP(CMainStatusBar, CStatusBar)
+	ON_WM_PAINT()
+	ON_WM_ERASEBKGND()
+END_MESSAGE_MAP()
+
+
+void CMainStatusBar::OnPaint()
+{
+	if(!DarkMode::IsEnabled())
+	{
+		CStatusBar::OnPaint();
+		return;
+	}
+	UpdateAllPanes(FALSE, TRUE);
+	CPaintDC dc(this);
+	DarkMode::DrawStatusBar(m_hWnd, dc);
+}
+
+
+BOOL CMainStatusBar::OnEraseBkgnd(CDC *pDC)
+{
+	if(DarkMode::IsEnabled())
+		return TRUE;
+	return CStatusBar::OnEraseBkgnd(pDC);
+}
+
+
+/////////////////////////////////////////////////////////////////////
+// CMainToolBar
+
 BEGIN_MESSAGE_MAP(CMainToolBar, CToolBarEx)
 	//{{AFX_MSG_MAP(CMainToolBar)
 	ON_WM_VSCROLL()
@@ -283,6 +334,7 @@ BEGIN_MESSAGE_MAP(CMainToolBar, CToolBarEx)
 	ON_COMMAND_RANGE(ID_SELECT_MIDI_DEVICE, ID_SELECT_MIDI_DEVICE + MAX_MIDI_DEVICES, &CMainToolBar::OnSelectMIDIDevice)
 	ON_MESSAGE(WM_DPICHANGED_AFTERPARENT, &CMainToolBar::OnDPIChangedAfterParent)
 	ON_MESSAGE(WM_SETTINGCHANGE,          &CMainToolBar::OnSettingChange)
+	ON_WM_SYSCOLORCHANGE()
 	ON_MESSAGE(WM_TOOLBAR_REFRESH,        &CMainToolBar::OnRefreshToolbar)
 
 	ON_EN_CHANGE(IDC_EDIT_CURRENTSPEED, &CMainToolBar::OnSpeedChanged)
@@ -374,6 +426,21 @@ LRESULT CMainToolBar::OnSettingChange(WPARAM, LPARAM)
 	// If we try to refresh the toolbar right in this event, nothing happens, but if we defer it via PostMessage, the spin buttons reappear.
 	PostMessage(WM_TOOLBAR_REFRESH);
 	return Default();
+}
+
+
+void CMainToolBar::OnSysColorChange()
+{
+	CToolBarEx::OnSysColorChange();
+	// Disabled icons are rendered differently on dark backgrounds
+	CDC *dc = GetDC();
+	const double scaling = HighDPISupport::GetDpiForWindow(m_hWnd) / 96.0;
+	m_ImageList.Create(IDB_MAINBAR, 16, 16, IMGLIST_NUMIMAGES, 1, dc, scaling, false);
+	m_ImageListDisabled.Create(IDB_MAINBAR, 16, 16, IMGLIST_NUMIMAGES, 1, dc, scaling, true);
+	ReleaseDC(dc);
+	GetToolBarCtrl().SetImageList(&m_ImageList);
+	GetToolBarCtrl().SetDisabledImageList(&m_ImageListDisabled);
+	Invalidate();
 }
 
 

@@ -14,6 +14,7 @@
 #include "AutoSaver.h"
 #include "Childfrm.h"
 #include "CloseMainDialog.h"
+#include "DarkMode.h"
 #include "DialogBase.h"
 #include "ExceptionHandler.h"
 #include "FileDialog.h"
@@ -1454,6 +1455,10 @@ BOOL CTrackApp::InitInstanceImpl(CMPTCommandLineInfo &cmdInfo)
 		break;
 	}
 
+	// Must happen before the main window is created, so that all windows are themed from the start
+	DarkMode::Initialize(TrackerSettings::Instance().darkMode);
+	TrackerSettings::Instance().AdaptDefaultColourSchemeToTheme();
+
 	// create main MDI Frame window
 	CMainFrame *pMainFrame = new CMainFrame();
 	if(!pMainFrame->LoadFrame(IDR_MAINFRAME))
@@ -1461,6 +1466,9 @@ BOOL CTrackApp::InitInstanceImpl(CMPTCommandLineInfo &cmdInfo)
 		return FALSE;
 	}
 	m_pMainWnd = pMainFrame;
+	// MFC cached the system colours on startup, before dark mode was enabled.
+	if(DarkMode::IsEnabled())
+		pMainFrame->SendMessage(WM_SYSCOLORCHANGE);
 
 	// Show splash screen
 	if(cmdInfo.m_bShowSplash && TrackerSettings::Instance().m_ShowSplashScreen)
@@ -1783,6 +1791,8 @@ int CTrackApp::ExitInstanceImpl()
 	// implicitly unload Wine Integration in next step
 
 	ComponentManager::Release();
+
+	DarkMode::Shutdown();
 
 	m_pComponentManagerSettings.reset();
 
