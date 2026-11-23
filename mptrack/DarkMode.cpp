@@ -1373,6 +1373,41 @@ void PaintTabControl(HWND hwnd, HDC dc)
 }
 
 
+// Tab controls usually have no WS_CLIPSIBLINGS style, while the pages they host are sibling windows covering the display area.
+// Painting the whole client area would therefore draw over those pages, so leave them out of the paint DC's clipping region.
+void ExcludeSiblingsFromClip(HWND hwnd, HDC dc)
+{
+	HWND parent = GetParent(hwnd);
+	if(!parent)
+		return;
+	RECT client;
+	GetClientRect(hwnd, &client);
+	for(HWND sibling = GetWindow(parent, GW_CHILD); sibling; sibling = GetWindow(sibling, GW_HWNDNEXT))
+	{
+		if(sibling == hwnd || !IsWindowVisible(sibling))
+			continue;
+		RECT rect;
+		GetWindowRect(sibling, &rect);
+		MapWindowPoints(HWND_DESKTOP, hwnd, reinterpret_cast<POINT *>(&rect), 2);
+		RECT overlap;
+		if(IntersectRect(&overlap, &rect, &client))
+			ExcludeClipRect(dc, overlap.left, overlap.top, overlap.right, overlap.bottom);
+	}
+}
+
+
+// Only repaint the affected tab when the hot-tracked item changes.
+void InvalidateTabItem(HWND hwnd, int index)
+{
+	RECT rect;
+	if(index < 0 || !TabCtrl_GetItemRect(hwnd, index, &rect))
+		return;
+	const int extra = MulDiv(2, HighDPISupport::GetDpiForWindow(hwnd), 96);
+	InflateRect(&rect, extra, extra);
+	InvalidateRect(hwnd, &rect, FALSE);
+}
+
+
 LRESULT HandleTabMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if(GetWindowStyle(hwnd) & (TCS_OWNERDRAWFIXED | TCS_VERTICAL | TCS_BOTTOM))
@@ -1384,6 +1419,7 @@ LRESULT HandleTabMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			PAINTSTRUCT ps;
 			HDC dc = BeginPaint(hwnd, &ps);
+			ExcludeSiblingsFromClip(hwnd, dc);
 			PaintBuffered(hwnd, dc, [hwnd](HDC paintDC) { PaintTabControl(hwnd, paintDC); });
 			EndPaint(hwnd, &ps);
 			return 0;
@@ -1401,8 +1437,9 @@ LRESULT HandleTabMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			auto &current = g_hotTabs.try_emplace(hwnd, -1).first->second;
 			if(hot != current)
 			{
+				InvalidateTabItem(hwnd, current);
+				InvalidateTabItem(hwnd, hot);
 				current = hot;
-				InvalidateRect(hwnd, nullptr, FALSE);
 				TRACKMOUSEEVENT tme{sizeof(tme), TME_LEAVE, hwnd, 0};
 				TrackMouseEvent(&tme);
 			}
@@ -1411,8 +1448,8 @@ LRESULT HandleTabMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSELEAVE:
 		if(auto it = g_hotTabs.find(hwnd); it != g_hotTabs.end() && it->second != -1)
 		{
+			InvalidateTabItem(hwnd, it->second);
 			it->second = -1;
-			InvalidateRect(hwnd, nullptr, FALSE);
 		}
 		break;
 	case WM_SETFOCUS:
