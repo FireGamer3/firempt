@@ -738,7 +738,6 @@ public:
 	Setting<mpt::ustring> IniVersion;
 	const bool FirstRun;
 	const Version PreviousSettingsVersion;
-	Setting<mpt::UUID> VersionInstallGUID;
 
 	// Display
 
@@ -1013,9 +1012,6 @@ public:
 	Setting<uint32> UpdateChannel;
 	Setting<mpt::ustring> UpdateUpdateURL_DEPRECATED;
 	Setting<mpt::ustring> UpdateAPIURL;
-	Setting<bool> UpdateStatisticsConsentAsked;
-	Setting<bool> UpdateStatistics;
-	Setting<bool> UpdateSendGUID_DEPRECATED;
 	Setting<bool> UpdateShowUpdateHint;
 	Setting<CString> UpdateIgnoreVersion;
 	Setting<bool> UpdateSkipSignatureVerificationUNSECURE;

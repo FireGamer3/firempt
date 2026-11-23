@@ -128,10 +128,6 @@ BOOL WelcomeDlg::OnInitDialog()
 	combo->SetItemDataPtr(combo->AddString(_T("FastTracker 2")), (void*)("US_mpt-ft2_classic"));
 
 	CheckDlgButton(IDC_CHECK1, BST_CHECKED);
-	CheckDlgButton(IDC_CHECK3, BST_CHECKED);
-#if defined(MPT_ENABLE_UPDATE)
-	GetDlgItem(IDC_STATIC_WELCOME_STATISTICS)->SetWindowText(mpt::ToCString(mpt::replace(CUpdateCheck::GetStatisticsUserInformation(false), U_("\n"), U_(" "))));
-#endif // MPT_ENABLE_UPDATE
 	CheckDlgButton(IDC_CHECK2, (TrackerSettings::Instance().patternFont.Get().name == PATTERNFONT_LARGE) ? BST_CHECKED : BST_UNCHECKED);
 
 	ShowWindow(SW_SHOW);
@@ -162,9 +158,7 @@ void WelcomeDlg::OnOK()
 #if defined(MPT_ENABLE_UPDATE)
 	bool runUpdates = IsDlgButtonChecked(IDC_CHECK1) != BST_UNCHECKED;
 	TrackerSettings::Instance().UpdateIntervalDays = (runUpdates ? 7 : -1);
-	TrackerSettings::Instance().UpdateStatistics = (IsDlgButtonChecked(IDC_CHECK3) != BST_UNCHECKED);
 	TrackerSettings::Instance().UpdateShowUpdateHint = false;
-	TrackerSettings::Instance().UpdateStatisticsConsentAsked = true;
 
 	CString artistName;
 	GetDlgItemText(IDC_EDIT2, artistName);

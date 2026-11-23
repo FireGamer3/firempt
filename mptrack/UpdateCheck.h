@@ -56,8 +56,6 @@ private:
 
 public:
 
-	static mpt::ustring GetStatisticsUserInformation(bool shortText);
-
 	static std::vector<mpt::ustring> GetDefaultUpdateSigningKeysRootAnchors();
 	static mpt::ustring GetDefaultAPIURL();
 	
@@ -82,7 +80,6 @@ public:
 		UINT msgCanceled;
 		bool autoUpdate;
 		bool loadPersisted;
-		std::string statistics;
 	};
 
 	struct Settings
@@ -92,8 +89,6 @@ public:
 		UpdateChannel channel;
 		mpt::PathString persistencePath;
 		mpt::ustring apiURL;
-		bool sendStatistics;
-		mpt::UUID statisticsUUID;
 		Settings();
 	};
 
@@ -129,9 +124,6 @@ public:
 
 public:
 
-	// v3
-	static std::string GetStatisticsDataV3(const Settings &settings);  // UTF8
-
 	static mpt::PathString GetUpdateTempDirectory(bool portable);
 
 protected:
@@ -148,13 +140,11 @@ protected:
 
 	static void CheckForUpdate(const CUpdateCheck::Settings &settings, const CUpdateCheck::Context &context);
 
-	static UpdateCheckResult SearchUpdate(const CUpdateCheck::Context &context, const CUpdateCheck::Settings &settings, const std::string &statistics); // may throw
+	static UpdateCheckResult SearchUpdate(const CUpdateCheck::Context &context, const CUpdateCheck::Settings &settings); // may throw
 
 	static void CleanOldUpdates(mpt::PathString dirTemp);
 
 	static void CleanOldUpdates(const CUpdateCheck::Settings &settings, const CUpdateCheck::Context &context);
-
-	static void SendStatistics(HTTP::InternetSession &internet, const CUpdateCheck::Settings &settings, const std::string &statistics); // may throw
 
 	static UpdateCheckResult SearchUpdateModern(HTTP::InternetSession &internet, const CUpdateCheck::Settings &settings); // may throw
 
@@ -178,7 +168,6 @@ protected:
 
 	afx_msg void OnSettingsChanged();
 	afx_msg void OnCheckNow();
-	afx_msg void OnShowStatisticsData(NMHDR * /*pNMHDR*/, LRESULT * /*pResult*/);
 	void EnableDisableDialog();
 	DECLARE_MESSAGE_MAP()
 

@@ -169,7 +169,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, IniVersion(conf, UL_("Version"), UL_("Version"), mpt::ustring())
 	, FirstRun(IniVersion.Get() == mpt::ustring())
 	, PreviousSettingsVersion(GetPreviousSettingsVersion(IniVersion))
-	, VersionInstallGUID(conf, UL_("Version"), UL_("InstallGUID"), mpt::UUID())
 	// Display
 	, m_ShowSplashScreen(conf, UL_("Display"), UL_("ShowSplashScreen"), true)
 	, gbMdiMaximize(conf, UL_("Display"), UL_("MDIMaximize"), true)
@@ -355,9 +354,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, UpdateChannel(conf, UL_("Update"), UL_("Channel"), UpdateChannelRelease)
 	, UpdateUpdateURL_DEPRECATED(conf, UL_("Update"), UL_("UpdateURL"), UL_("https://update.openmpt.org/check/$VERSION/$GUID"))
 	, UpdateAPIURL(conf, UL_("Update"), UL_("APIURL"), CUpdateCheck::GetDefaultAPIURL())
-	, UpdateStatisticsConsentAsked(conf, UL_("Update"), UL_("StatisticsConsentAsked"), false)
-	, UpdateStatistics(conf, UL_("Update"), UL_("Statistics"), false)
-	, UpdateSendGUID_DEPRECATED(conf, UL_("Update"), UL_("SendGUID"), false)
 	, UpdateShowUpdateHint(conf, UL_("Update"), UL_("ShowUpdateHint"), true)
 	, UpdateIgnoreVersion(conf, UL_("Update"), UL_("IgnoreVersion"), _T(""))
 	, UpdateSkipSignatureVerificationUNSECURE(conf, UL_("Update"), UL_("SkipSignatureVerification"), false)
@@ -488,11 +484,8 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	const Version storedVersion = PreviousSettingsVersion;
 
 	// Version
-	if(!VersionInstallGUID.Get().IsValid())
-	{
-		// No UUID found - generate one.
-		VersionInstallGUID = mpt::UUID::Generate(mpt::global_prng());
-	}
+	// The install UUID only existed to identify this installation to the upstream statistics server.
+	conf.Remove(UL_("Version"), UL_("InstallGUID"));
 
 	// Plugins
 	if(storedVersion < MPT_V("1.19.03.01") && vstHostProductString.Get() == "OpenMPT")
@@ -852,22 +845,19 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		{
 			UpdateChannel = UpdateChannelDevelopment;
 		}
-		UpdateStatistics = UpdateSendGUID_DEPRECATED.Get();
 		conf.Forget(UpdateUpdateCheckPeriod_DEPRECATED.GetPath());
 		conf.Forget(UpdateUpdateURL_DEPRECATED.GetPath());
-		conf.Forget(UpdateSendGUID_DEPRECATED.GetPath());
 	}
 	if(storedVersion < MPT_V("1.31.00.12"))
 	{
 		UpdateLastUpdateCheck = mpt::chrono::default_system_clock::time_point{};
 	}
-	if(storedVersion < MPT_V("1.33.00.20"))
-	{
-		UpdateStatisticsConsentAsked = conf.Read<bool>(UL_("Update"), UL_("StatistisConsentAsked"), false);
-		UpdateStatistics = conf.Read<bool>(UL_("Update"), UL_("Statistis"), false);
-		conf.Forget(UL_("Update"), UL_("StatistisConsentAsked"));
-		conf.Forget(UL_("Update"), UL_("Statistis"));
-	}
+	// Statistics reporting has been removed; drop any leftover settings.
+	conf.Remove(UL_("Update"), UL_("SendGUID"));
+	conf.Remove(UL_("Update"), UL_("Statistis"));
+	conf.Remove(UL_("Update"), UL_("StatistisConsentAsked"));
+	conf.Remove(UL_("Update"), UL_("Statistics"));
+	conf.Remove(UL_("Update"), UL_("StatisticsConsentAsked"));
 #endif // MPT_ENABLE_UPDATE
 
 	if(storedVersion < MPT_V("1.29.00.39"))
